@@ -7,21 +7,21 @@ load_dotenv(".env")
 
 @tool
 def write_email(to: str, subject: str, content: str) -> str:
-    """Write and send an email."""
-    # Placeholder response - in real app would send email
+    """撰写并发送邮件（示例）。"""
+    # 占位实现：真实应用应调用发送服务
     return f"Email sent to {to} with subject '{subject}' and content: {content}"
 
 llm = init_chat_model("openai:gpt-4.1", temperature=0)
 model_with_tools = llm.bind_tools([write_email], tool_choice="any")
 
 def call_llm(state: MessagesState) -> MessagesState:
-    """Run LLM"""
+    """调用 LLM（可携带工具）"""
 
     output = model_with_tools.invoke(state["messages"])
     return {"messages": [output]}
 
 def run_tool(state: MessagesState) -> MessagesState:
-    """Performs the tool call"""
+    """执行工具调用"""
 
     result = []
     for tool_call in state["messages"][-1].tool_calls:
@@ -30,7 +30,7 @@ def run_tool(state: MessagesState) -> MessagesState:
     return {"messages": result}
 
 def should_continue(state: MessagesState) -> Literal["run_tool", "__end__"]:
-    """Route to tool handler, or end if Done tool called"""
+    """若需要工具则进入 run_tool；否则结束。"""
     
     # Get the last message
     messages = state["messages"]

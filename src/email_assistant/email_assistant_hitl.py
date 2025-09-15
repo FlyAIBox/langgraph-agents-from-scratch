@@ -14,44 +14,44 @@ from dotenv import load_dotenv
 
 load_dotenv(".env")
 
-# Get tools
+# 获取工具集合（人机协同相关）
 tools = get_tools(["write_email", "schedule_meeting", "check_calendar_availability", "Question", "Done"])
 tools_by_name = get_tools_by_name(tools)
 
-# Initialize the LLM for use with router / structured output
+# 初始化用于路由/结构化输出的聊天模型（LLM）
 llm = init_chat_model("openai:gpt-4.1", temperature=0.0)
 llm_router = llm.with_structured_output(RouterSchema) 
 
-# Initialize the LLM, enforcing tool use (of any available tools) for agent
+# 初始化用于 Agent 的模型，强制必须调用工具（tool_choice="required"）
 llm = init_chat_model("openai:gpt-4.1", temperature=0.0)
 llm_with_tools = llm.bind_tools(tools, tool_choice="required")
 
 # Nodes 
 def triage_router(state: State) -> Command[Literal["triage_interrupt_handler", "response_agent", "__end__"]]:
-    """Analyze email content to decide if we should respond, notify, or ignore.
+    """分析邮件内容，决定是回复（respond）、通知（notify），还是忽略（ignore）。
 
-    The triage step prevents the assistant from wasting time on:
-    - Marketing emails and spam
-    - Company-wide announcements
-    - Messages meant for other teams
+    分拣阶段可避免助手在以下邮件上浪费时间：
+    - 营销邮件与垃圾邮件
+    - 面向全公司的公告
+    - 明显应由其他团队处理的信息
     """
 
-    # Parse the email input
+    # 解析邮件输入
     author, to, subject, email_thread = parse_email(state["email_input"])
     user_prompt = triage_user_prompt.format(
         author=author, to=to, subject=subject, email_thread=email_thread
     )
 
-    # Create email markdown for Agent Inbox in case of notification  
+    # 若走通知路径，为 Agent Inbox 生成邮件 Markdown  
     email_markdown = format_email_markdown(subject, author, to, email_thread)
 
-    # Format system prompt with background and triage instructions
+    # 组合系统提示词（包含背景与分拣指令）
     system_prompt = triage_system_prompt.format(
         background=default_background,
         triage_instructions=default_triage_instructions
     )
 
-    # Run the router LLM
+    # 运行路由模型
     result = llm_router.invoke(
         [
             {"role": "system", "content": system_prompt},
@@ -59,15 +59,15 @@ def triage_router(state: State) -> Command[Literal["triage_interrupt_handler", "
         ]
     )
 
-    # Decision
+    # 分类结果
     classification = result.classification
 
     # Process the classification decision
     if classification == "respond":
         print("📧 Classification: RESPOND - This email requires a response")
-        # Next node
+        # 下一步节点
         goto = "response_agent"
-        # Update the state
+        # 更新状态
         update = {
             "classification_decision": result.classification,
             "messages": [{"role": "user",
@@ -77,9 +77,9 @@ def triage_router(state: State) -> Command[Literal["triage_interrupt_handler", "
     elif classification == "ignore":
         print("🚫 Classification: IGNORE - This email can be safely ignored")
 
-        # Next node
+        # 下一步节点
         goto = END
-        # Update the state
+        # 更新状态
         update = {
             "classification_decision": classification,
         }
@@ -87,9 +87,9 @@ def triage_router(state: State) -> Command[Literal["triage_interrupt_handler", "
     elif classification == "notify":
         print("🔔 Classification: NOTIFY - This email contains important information") 
 
-        # Next node
+        # 下一步节点
         goto = "triage_interrupt_handler"
-        # Update the state
+        # 更新状态
         update = {
             "classification_decision": classification,
         }
@@ -99,58 +99,58 @@ def triage_router(state: State) -> Command[Literal["triage_interrupt_handler", "
     return Command(goto=goto, update=update)
 
 def triage_interrupt_handler(state: State) -> Command[Literal["response_agent", "__end__"]]:
-    """Handles interrupts from the triage step"""
+    """处理从分拣阶段发起的中断（交由人工审阅/决策）。"""
     
-    # Parse the email input
+    # 解析邮件输入
     author, to, subject, email_thread = parse_email(state["email_input"])
 
-    # Create email markdown for Agent Inbox in case of notification  
+    # 为 Agent Inbox 生成用于展示的邮件 Markdown  
     email_markdown = format_email_markdown(subject, author, to, email_thread)
 
-    # Create messages
+    # 构造消息内容
     messages = [{"role": "user",
                 "content": f"Email to notify user about: {email_markdown}"
                 }]
 
-    # Create interrupt for Agent Inbox
+    # 构造 Agent Inbox 中断请求
     request = {
         "action_request": {
             "action": f"Email Assistant: {state['classification_decision']}",
             "args": {}
         },
         "config": {
-            "allow_ignore": True,  
-            "allow_respond": True, 
-            "allow_edit": False, 
-            "allow_accept": False,  
+            "allow_ignore": True,  # 允许忽略
+            "allow_respond": True, # 允许回复
+            "allow_edit": False,   # 不允许编辑
+            "allow_accept": False, # 不允许直接接受
         },
-        # Email to show in Agent Inbox
+        # Agent Inbox 中展示的邮件描述
         "description": email_markdown,
     }
 
-    # Agent Inbox responds with a list  
+    # Agent Inbox 返回一个列表作为响应  
     response = interrupt([request])[0]
 
-    # If user provides feedback, go to response agent and use feedback to respond to email   
+    # 若用户给出反馈：跳转回复 Agent，并依据反馈撰写邮件   
     if response["type"] == "response":
-        # Add feedback to messages 
+        # 将反馈加入消息 
         user_input = response["args"]
-        # Used by the response agent
+        # 将被回复 Agent 使用
         messages.append({"role": "user",
                         "content": f"User wants to reply to the email. Use this feedback to respond: {user_input}"
                         })
-        # Go to response agent
+        # 跳转回复 Agent
         goto = "response_agent"
 
-    # If user ignores email, go to END
+    # 若用户忽略，则结束
     elif response["type"] == "ignore":
         goto = END
 
-    # Catch all other responses
+    # 其他类型统一报错
     else:
         raise ValueError(f"Invalid response: {response}")
 
-    # Update the state 
+    # 更新状态 
     update = {
         "messages": messages,
     }
@@ -158,7 +158,7 @@ def triage_interrupt_handler(state: State) -> Command[Literal["response_agent", 
     return Command(goto=goto, update=update)
 
 def llm_call(state: State):
-    """LLM decides whether to call a tool or not"""
+    """LLM 判断是否需要调用某个工具。"""
 
     return {
         "messages": [
@@ -177,12 +177,12 @@ def llm_call(state: State):
     }
 
 def interrupt_handler(state: State) -> Command[Literal["llm_call", "__end__"]]:
-    """Creates an interrupt for human review of tool calls"""
+    """为工具调用创建人工审阅的中断。"""
     
-    # Store messages
+    # 累积要写回状态的消息
     result = []
 
-    # Go to the LLM call node next
+    # 默认回到 LLM 调用节点
     goto = "llm_call"
 
     # Iterate over the tool calls in the last message
@@ -345,9 +345,9 @@ def interrupt_handler(state: State) -> Command[Literal["llm_call", "__end__"]]:
 
     return Command(goto=goto, update=update)
 
-# Conditional edge function
+# 条件边函数
 def should_continue(state: State) -> Literal["interrupt_handler", "__end__"]:
-    """Route to tool handler, or end if Done tool called"""
+    """若调用 Done 则结束，否则进入工具审阅节点。"""
     messages = state["messages"]
     last_message = messages[-1]
     if last_message.tool_calls:
@@ -357,14 +357,14 @@ def should_continue(state: State) -> Literal["interrupt_handler", "__end__"]:
             else:
                 return "interrupt_handler"
 
-# Build workflow
+# 构建工作流
 agent_builder = StateGraph(State)
 
-# Add nodes
+# 添加节点
 agent_builder.add_node("llm_call", llm_call)
 agent_builder.add_node("interrupt_handler", interrupt_handler)
 
-# Add edges
+# 添加边
 agent_builder.add_edge(START, "llm_call")
 agent_builder.add_conditional_edges(
     "llm_call",
@@ -375,10 +375,10 @@ agent_builder.add_conditional_edges(
     },
 )
 
-# Compile the agent
+# 编译 Agent
 response_agent = agent_builder.compile()
 
-# Build overall workflow
+# 构建整体工作流
 overall_workflow = (
     StateGraph(State, input=StateInput)
     .add_node(triage_router)

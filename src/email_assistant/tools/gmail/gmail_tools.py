@@ -1,6 +1,6 @@
 """
-Gmail tools implementation module. 
-This module formats the Gmail API functions into LangChain tools.
+Gmail 工具实现模块。
+本模块将 Gmail API 能力封装为 LangChain 工具。
 """
 
 import os
@@ -15,16 +15,15 @@ from pathlib import Path
 from pydantic import Field, BaseModel
 from langchain_core.tools import tool
 
-# Setup basic logging
+# 基础日志配置
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Define paths for credentials and tokens
+# 凭据与令牌文件路径
 _ROOT = Path(__file__).parent.absolute()
 _SECRETS_DIR = _ROOT / ".secrets"
 
-# We need to try importing the Gmail API libraries
-# If they're not available, we'll use a mock implementation
+# 尝试导入 Gmail 相关依赖；若不可用，则回退到模拟实现
 try:
     import logging
     from googleapiclient.discovery import build
@@ -35,13 +34,13 @@ try:
     from google_auth_oauthlib.flow import InstalledAppFlow
     from google.auth.transport.requests import Request
     
-    # Setup logging
+    # 日志配置
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
     
-    # Email content extraction function
+    # 邮件内容提取函数
     def extract_message_part(payload):
-        """Extract content from a message part."""
+        """从消息分段结构中抽取文本内容。"""
         if payload.get("body", {}).get("data"):
             # Handle base64 encoded content
             data = payload["body"]["data"]
@@ -60,22 +59,20 @@ try:
             
         return ""
     
-    # Function to get credentials from token.json or environment variables
+    # 从 token.json / 环境变量获取凭据
     def get_credentials(gmail_token=None, gmail_secret=None):
         """
-        Get Gmail API credentials from token.json or environment variables.
-        
-        This function attempts to load credentials from multiple sources in this order:
-        1. Directly passed gmail_token and gmail_secret parameters
-        2. Environment variables GMAIL_TOKEN and GMAIL_SECRET
-        3. Local files at token_path (.secrets/token.json) and secrets_path (.secrets/secrets.json)
+        优先级从高到低：
+        1. 直接传入的 gmail_token / gmail_secret
+        2. 环境变量 GMAIL_TOKEN / GMAIL_SECRET
+        3. 本地 .secrets/token.json 与 .secrets/secrets.json
         
         Args:
-            gmail_token: Optional JSON string containing token data
-            gmail_secret: Optional JSON string containing credentials
+            gmail_token: 可选 JSON 字符串或对象，包含 token 数据
+            gmail_secret: 可选 JSON 字符串或对象，包含 client 凭据
             
         Returns:
-            Google OAuth2 Credentials object or None if credentials can't be loaded
+            Google OAuth2 Credentials 对象；若无法加载则返回 None
         """
         token_path = _SECRETS_DIR / "token.json"
         token_data = None
@@ -117,7 +114,7 @@ try:
         try:
             from google.oauth2.credentials import Credentials
             
-            # Create credentials object with specific format
+            # 构造 Credentials 对象
             credentials = Credentials(
                 token=token_data.get("token"),
                 refresh_token=token_data.get("refresh_token"),
@@ -127,7 +124,7 @@ try:
                 scopes=token_data.get("scopes", ["https://www.googleapis.com/auth/gmail.modify"])
             )
             
-            # Add authorize method to make it compatible with old code
+            # 兼容旧代码：附加 authorize 方法
             credentials.authorize = lambda request: request
             
             return credentials
@@ -141,11 +138,11 @@ try:
     GMAIL_API_AVAILABLE = True
     
 except ImportError:
-    # If Gmail API libraries aren't available, set flag to use mock implementation
+    # 若 Gmail 依赖不可用，标记为使用模拟实现
     GMAIL_API_AVAILABLE = False
     logger = logging.getLogger(__name__)
 
-# Helper function that is used by the tool and can be imported elsewhere
+# 供工具使用、亦可单独导入的帮助函数
 def fetch_group_emails(
     email_address: str,
     minutes_since: int = 30,
@@ -155,31 +152,29 @@ def fetch_group_emails(
     skip_filters: bool = False,
 ) -> Iterator[Dict[str, Any]]:
     """
-    Fetch recent emails from Gmail that involve the specified email address.
-    
-    This function retrieves emails where the specified address is either a sender
-    or recipient, processes them, and returns them in a format suitable for the
-    email assistant to process.
+    拉取与指定邮箱地址相关的近期 Gmail 邮件。
+
+    说明：会处理线程与发件人信息，输出适合邮件助理消费的结构。
     
     Args:
-        email_address: Email address to fetch messages for
-        minutes_since: Only retrieve emails newer than this many minutes
-        gmail_token: Optional token for Gmail API authentication
-        gmail_secret: Optional credentials for Gmail API authentication
-        include_read: Whether to include already read emails (default: False)
-        skip_filters: Skip thread and sender filtering (return all messages, default: False)
+        email_address: 目标邮箱地址
+        minutes_since: 仅获取距今多少分钟以内的邮件
+        gmail_token: 可选的 Gmail API token（JSON）
+        gmail_secret: 可选的 Gmail API 凭据（JSON）
+        include_read: 是否包含已读邮件（默认 False）
+        skip_filters: 跳过线程与发件人过滤（返回全部匹配，默认 False）
         
     Yields:
-        Dict objects containing processed email information
+        Dict：处理后的邮件信息
     """
     use_mock = False
     
-    # Check if we need to use mock implementation
+    # 判断是否使用模拟实现
     if not GMAIL_API_AVAILABLE:
         logger.info("Gmail API not available, using mock implementation")
         use_mock = True
     
-    # Check if required credential files exist
+    # 检查凭据文件是否存在
     if not use_mock and not gmail_token and not gmail_secret:
         token_path = str(_SECRETS_DIR / "token.json")
         secrets_path = str(_SECRETS_DIR / "secrets.json")
@@ -189,7 +184,7 @@ def fetch_group_emails(
             logger.warning("Using mock implementation instead")
             use_mock = True
     
-    # Return mock data if needed
+    # 如需则返回模拟数据
     if use_mock:
         # For demo purposes, we return a mock email
         mock_email = {
@@ -206,10 +201,10 @@ def fetch_group_emails(
         return
     
     try:
-        # Get Gmail API credentials from parameters, environment variables, or local files
+        # 根据入参/环境变量/本地文件获取凭据
         creds = get_credentials(gmail_token, gmail_secret)
         
-        # Check if credentials are valid
+        # 校验凭据有效性
         if not creds or not hasattr(creds, 'authorize'):
             logger.warning("Invalid Gmail credentials, using mock implementation")
             logger.warning("Ensure GMAIL_TOKEN environment variable is set or token.json file exists")
@@ -227,16 +222,10 @@ def fetch_group_emails(
             
         service = build("gmail", "v1", credentials=creds)
         
-        # Calculate timestamp for filtering
+        # 计算时间过滤边界
         after = int((datetime.now() - timedelta(minutes=minutes_since)).timestamp())
         
-        # Construct Gmail search query
-        # This query searches for:
-        # - Emails sent to or from the specified address
-        # - Emails after the specified timestamp
-        # - Including emails from all categories (inbox, updates, promotions, etc.)
-        
-        # Base query with time filter
+        # 构造查询语句：目标地址往来 + 时间过滤 +（可扩展类目）
         query = f"(to:{email_address} OR from:{email_address}) after:{after}"
         
         # Only include unread emails unless include_read is True
@@ -245,14 +234,14 @@ def fetch_group_emails(
         else:
             logger.info("Including read emails in search")
             
-        # Log the final query for debugging
+        # 记录最终查询便于调试
         logger.info(f"Gmail search query: {query}")
             
         # Additional filter options (commented out by default)
         # If you want to include emails from specific categories, use:
         # query += " category:(primary OR updates OR promotions)"
         
-        # Retrieve all matching messages (handling pagination)
+        # 分页拉取匹配邮件
         messages = []
         nextPageToken = None
         logger.info(f"Fetching emails for {email_address} from last {minutes_since} minutes")
@@ -276,34 +265,31 @@ def fetch_group_emails(
                 logger.info(f"Total messages found: {len(messages)}")
                 break
 
-        # Process each message
+        # 逐封处理
         count = 0
         for message in messages:
             try:
-                # Get full message details
+                # 获取邮件详情
                 msg = service.users().messages().get(userId="me", id=message["id"]).execute()
                 thread_id = msg["threadId"]
                 payload = msg["payload"]
                 headers = payload.get("headers", [])
                 
-                # Get thread details to determine conversation context
-                # Directly fetch the complete thread without any format restriction
-                # This matches the exact approach in the test code that successfully gets all messages
+                # 获取线程详情用于判断会话上下文（完整拉取）
                 thread = service.users().threads().get(userId="me", id=thread_id).execute()
                 messages_in_thread = thread["messages"]
                 logger.info(f"Retrieved thread {thread_id} with {len(messages_in_thread)} messages")
                 
-                # Sort messages by internalDate to ensure proper chronological ordering
-                # This ensures we correctly identify the latest message
+                # 依据 internalDate 排序，确保拿到最新一封
                 if all("internalDate" in msg for msg in messages_in_thread):
                     messages_in_thread.sort(key=lambda m: int(m.get("internalDate", 0)))
                     logger.info(f"Sorted {len(messages_in_thread)} messages by internalDate")
                 else:
-                    # Fallback to ID-based sorting if internalDate is missing
+                    # 兜底：若缺 internalDate 则按 ID 排序
                     messages_in_thread.sort(key=lambda m: m["id"])
                     logger.info(f"Sorted {len(messages_in_thread)} messages by ID (internalDate missing)")
                 
-                # Log details about the messages in the thread for debugging
+                # 记录线程内部每封邮件的关键信息
                 for idx, msg in enumerate(messages_in_thread):
                     headers = msg["payload"]["headers"]
                     subject = next((h["value"] for h in headers if h["name"] == "Subject"), "No Subject")
@@ -311,14 +297,14 @@ def fetch_group_emails(
                     date = next((h["value"] for h in headers if h["name"] == "Date"), "Unknown")
                     logger.info(f"  Message {idx+1}/{len(messages_in_thread)}: ID={msg['id']}, Date={date}, From={from_email}")
                 
-                # Log thread information for debugging
+                # 记录线程规模
                 logger.info(f"Thread {thread_id} has {len(messages_in_thread)} messages")
                 
-                # Analyze the last message in the thread to determine if we need to process it
+                # 分析线程中最后一封邮件以确定是否处理
                 last_message = messages_in_thread[-1]
                 last_headers = last_message["payload"]["headers"]
                 
-                # Get sender of last message
+                # 取最后一封的发件人
                 from_header = next(
                     header["value"] for header in last_headers if header["name"] == "From"
                 )
@@ -328,8 +314,7 @@ def fetch_group_emails(
                     if header["name"] == "From"
                 )
                 
-                # If the last message was sent by the user, mark this as a user response
-                # and don't process it further (assistant doesn't need to respond to user's own emails)
+                # 若最后一封来自用户自身，则认为已回复，不再处理
                 if email_address in last_from_header:
                     yield {
                         "id": message["id"],
@@ -338,13 +323,13 @@ def fetch_group_emails(
                     }
                     continue
                     
-                # Check if this is a message we should process
+                # 判断是否应处理该邮件
                 is_from_user = email_address in from_header
                 is_latest_in_thread = message["id"] == last_message["id"]
                 
-                # Modified logic for skip_filters:
-                # 1. When skip_filters is True, process all messages regardless of position in thread
-                # 2. When skip_filters is False, only process if it's not from user AND is latest in thread
+                # skip_filters 逻辑：
+                # 1) True：处理线程内所有邮件
+                # 2) False：仅处理“不是用户发送且为最新一封”的邮件
                 should_process = skip_filters or (not is_from_user and is_latest_in_thread)
                 
                 if not should_process:
@@ -353,16 +338,14 @@ def fetch_group_emails(
                     elif not is_latest_in_thread:
                         logger.debug(f"Skipping message {message['id']}: not the latest in thread")
                 
-                # Process the message if it passes our filters (or if filters are skipped)
+                # 通过过滤（或跳过过滤）则处理
                 if should_process:
                     # Log detailed information about this message
                     logger.info(f"Processing message {message['id']} from thread {thread_id}")
                     logger.info(f"  Is latest in thread: {is_latest_in_thread}")
                     logger.info(f"  Skip filters enabled: {skip_filters}")
                     
-                    # If the user wants to process the latest message in the thread,
-                    # use the last_message from the thread API call instead of the original message
-                    # that matched the search query
+                    # 若需要处理最新一封，使用 thread API 返回的 last_message
                     if not skip_filters:
                         # Use original message if skip_filters is False
                         process_message = message
@@ -375,7 +358,7 @@ def fetch_group_emails(
                         process_headers = process_payload.get("headers", [])
                         logger.info(f"Using latest message in thread: {process_message['id']}")
                     
-                    # Extract email metadata from headers
+                    # 从 headers 提取元信息
                     subject = next(
                         header["value"] for header in process_headers if header["name"] == "Subject"
                     )
@@ -388,7 +371,7 @@ def fetch_group_emails(
                         "",
                     ).strip()
                     
-                    # Use Reply-To header if present
+                    # 优先使用 Reply-To
                     if reply_to := next(
                         (
                             header["value"]
@@ -399,16 +382,16 @@ def fetch_group_emails(
                     ).strip():
                         from_email = reply_to
                         
-                    # Extract and parse email timestamp
+                    # 提取与解析发送时间
                     send_time = next(
                         header["value"] for header in process_headers if header["name"] == "Date"
                     )
                     parsed_time = parse_time(send_time)
                     
-                    # Extract email body content
+                    # 提取正文内容
                     body = extract_message_part(process_payload)
                     
-                    # Yield the processed email data
+                    # 产出处理后的结构
                     yield {
                         "from_email": from_email,
                         "to_email": _to_email,

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-# Email assistant triage prompt 
+# 邮件助理：分拣（Triage）系统提示 
 triage_system_prompt = """
 
 < Role >
@@ -24,7 +24,7 @@ Classify the below email into one of these categories.
 </ Rules >
 """
 
-# Email assistant triage user prompt 
+# 邮件助理：分拣用户提示 
 triage_user_prompt = """
 Please determine how to handle the below email thread:
 
@@ -33,7 +33,7 @@ To: {to}
 Subject: {subject}
 {email_thread}"""
 
-# Email assistant prompt 
+# 邮件助理：Agent 系统提示 
 agent_system_prompt = """
 < Role >
 You are a top-notch executive assistant who cares about helping your executive perform as well as possible.
@@ -70,7 +70,7 @@ When handling emails, follow these steps:
 </ Calendar Preferences >
 """
 
-# Email assistant with HITL prompt 
+# 邮件助理（含人机协同 HITL）：系统提示 
 agent_system_prompt_hitl = """
 < Role >
 You are a top-notch executive assistant who cares about helping your executive perform as well as possible.
@@ -108,8 +108,8 @@ When handling emails, follow these steps:
 </ Calendar Preferences >
 """
 
-# Email assistant with HITL and memory prompt 
-# Note: Currently, this is the same as the HITL prompt. However, memory specific tools (see https://langchain-ai.github.io/langmem/) can be added  
+# 邮件助理（HITL + Memory）：系统提示 
+# 注：目前与 HITL 提示一致；未来可加入 LangMem 等记忆相关工具（参见 https://langchain-ai.github.io/langmem/）  
 agent_system_prompt_hitl_memory = """
 < Role >
 You are a top-notch executive assistant. 
@@ -147,12 +147,12 @@ When handling emails, follow these steps:
 </ Calendar Preferences >
 """
 
-# Default background information 
+# 默认背景信息 
 default_background = """ 
 I'm Lance, a software engineer at LangChain.
 """
 
-# Default response preferences 
+# 默认回复偏好 
 default_response_preferences = """
 Use professional and concise language. If the e-mail mentions a deadline, make sure to explicitly acknowledge and reference the deadline in your response.
 
@@ -178,12 +178,12 @@ When responding to meeting scheduling requests:
 - Reference the meeting's purpose in your response.
 """
 
-# Default calendar preferences 
+# 默认日历偏好 
 default_cal_preferences = """
 30 minute meetings are preferred, but 15 minute meetings are also acceptable.
 """
 
-# Default triage instructions 
+# 默认分拣指令 
 default_triage_instructions = """
 Emails that are not worth responding to:
 - Marketing newsletters and promotional emails

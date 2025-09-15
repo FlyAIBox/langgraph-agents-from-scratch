@@ -2,14 +2,14 @@ from typing import Dict, List, Callable, Any, Optional
 from langchain_core.tools import BaseTool
 
 def get_tools(tool_names: Optional[List[str]] = None, include_gmail: bool = False) -> List[BaseTool]:
-    """Get specified tools or all tools if tool_names is None.
-    
+    """获取指定的工具；若未指定则返回全部工具。
+
     Args:
-        tool_names: Optional list of tool names to include. If None, returns all tools.
-        include_gmail: Whether to include Gmail tools. Defaults to False.
+        tool_names: 可选的工具名列表；为 None 时返回全部工具。
+        include_gmail: 是否包含 Gmail 工具，默认为 False。
         
     Returns:
-        List of tool objects
+        工具对象列表（List[BaseTool]）
     """
     # Import default tools
     from email_assistant.tools.default.email_tools import write_email, Done, Question
@@ -24,7 +24,7 @@ def get_tools(tool_names: Optional[List[str]] = None, include_gmail: bool = Fals
         "check_calendar_availability": check_calendar_availability,
     }
     
-    # Add Gmail tools if requested
+    # 如需要，加入 Gmail 工具
     if include_gmail:
         try:
             from email_assistant.tools.gmail.gmail_tools import (
@@ -41,7 +41,7 @@ def get_tools(tool_names: Optional[List[str]] = None, include_gmail: bool = Fals
                 "schedule_meeting_tool": schedule_meeting_tool,
             })
         except ImportError:
-            # If Gmail tools aren't available, continue without them
+            # 若 Gmail 工具不可用，忽略并继续
             pass
     
     if tool_names is None:
@@ -50,7 +50,10 @@ def get_tools(tool_names: Optional[List[str]] = None, include_gmail: bool = Fals
     return [all_tools[name] for name in tool_names if name in all_tools]
 
 def get_tools_by_name(tools: Optional[List[BaseTool]] = None) -> Dict[str, BaseTool]:
-    """Get a dictionary of tools mapped by name."""
+    """按名称返回工具映射字典。
+
+    若未传入 tools，则先获取全部工具。
+    """
     if tools is None:
         tools = get_tools()
     

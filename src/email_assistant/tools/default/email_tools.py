@@ -4,21 +4,21 @@ from langchain_core.tools import tool
 
 @tool
 def write_email(to: str, subject: str, content: str) -> str:
-    """Write and send an email."""
-    # Placeholder response - in real app would send email
+    """撰写并发送邮件（示例版）。"""
+    # 占位实现：真实应用中应调用邮件发送服务
     return f"Email sent to {to} with subject '{subject}' and content: {content}"
 
 @tool
 def triage_email(category: Literal["ignore", "notify", "respond"]) -> str:
-    """Triage an email into one of three categories: ignore, notify, respond."""
+    """将邮件分拣为三类之一：ignore / notify / respond。"""
     return f"Classification Decision: {category}"
 
 @tool
 class Done(BaseModel):
-    """E-mail has been sent."""
+    """表示邮件已发送，流程可结束。"""
     done: bool
 
 @tool
 class Question(BaseModel):
-      """Question to ask user."""
+      """向用户发问以收集必要信息。"""
       content: str

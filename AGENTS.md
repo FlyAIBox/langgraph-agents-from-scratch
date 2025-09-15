@@ -1,90 +1,92 @@
-# Agents in this Repository
+# 本仓库中的智能体（Agents）
 
-## Overview
+## 概览
 
-This repository demonstrates building agents using LangGraph, focusing on an email assistant that can:
-- Triage incoming emails
-- Draft appropriate responses
-- Execute actions (calendar scheduling, etc.)
-- Incorporate human feedback
-- Learn from past interactions
+本仓库演示如何使用 LangGraph 从零构建智能体（Agent），重点围绕一个“邮件助理”场景，能力包括：
+- 对新收邮件进行分拣与优先级判定（Triage）
+- 擬写并完善合适的邮件回复
+- 执行动作（例如：日程安排等）
+- 引入人工反馈（Human-in-the-Loop）
+- 基于历史交互持续学习与记忆
 
+注：本文面向大模型与 LangGraph 技术的初学者，力求清晰、严谨、信雅达。
 
-## Environment Setup
+## 环境准备
 
-**Recommended: Using uv (faster and more reliable)**
+**推荐：使用 uv（更快、更稳定）**
 
 ```bash
-# Install uv if you haven't already
+# 如未安装 uv，请先安装
 pip install uv
 
-# Install the package with development dependencies
+# 安装包含开发依赖的本项目
 uv sync --extra dev
 ```
 
-**Alternative: Using pip**
+**可选：使用 pip**
 
 ```bash
-# Create and activate a virtual environment
+# 创建并激活虚拟环境
 python3 -m venv .venv
 source .venv/bin/activate
 
-# Ensure you have a recent version of pip (required for editable installs with pyproject.toml)
+# 升级 pip（pyproject.toml 的可编辑安装需要较新版本）
 python3 -m pip install --upgrade pip
 
-# Install the package in editable mode
+# 以可编辑模式安装本项目
 pip install -e .
 ```
 
-## Agent Implementations
+## 智能体实现
 
-### Scripts 
+### 脚本 
 
-The repository contains several implementations with increasing complexity in `src/email_assistant`:
+在 `src/email_assistant` 目录中包含多种由浅入深的实现：
 
-1. **LangGraph 101** (`langgraph_101.py`)
-   - Basics of LangGraph 
+1. **LangGraph 101**（`langgraph_101.py`）
+   - LangGraph 基础概念与最小示例
 
-2. **Basic Email Assistant** (`email_assistant.py`)
-   - Core email triage and response functionality
+2. **基础邮件助理**（`email_assistant.py`）
+   - 核心的邮件分拣与邮件回复能力
 
-3. **Human-in-the-Loop** (`email_assistant_hitl.py`) 
-   - Adds ability for humans to review and approve actions
+3. **人机协同（HITL）**（`email_assistant_hitl.py`）
+   - 支持关键动作由人审阅与批准
 
-4. **Memory-Enabled HITL** (`email_assistant_hitl_memory.py`)
-   - Adds persistent memory to learn from feedback
+4. **带记忆的人机协同**（`email_assistant_hitl_memory.py`）
+   - 引入可持久化的记忆，从用户反馈中学习
 
-5. **Gmail Integration** (`email_assistant_hitl_memory_gmail.py`)
-   - Connects to Gmail API for real email processing
+5. **Gmail 集成**（`email_assistant_hitl_memory_gmail.py`）
+   - 连接 Gmail API 处理真实邮件
 
-### Notebooks
+### 笔记本（Notebooks）
 
-Each aspect of the agent is explained in dedicated notebooks:
-- `notebooks/langgraph_101.ipynb` - LangGraph basics
-- `notebooks/agent.ipynb` - Basic agent implementation
-- `notebooks/evaluation.ipynb` - Agent evaluation
-- `notebooks/hitl.ipynb` - Human-in-the-loop functionality
-- `notebooks/memory.ipynb` - Adding memory capabilities
+每个能力点均配有讲解笔记本：
+- `notebooks/langgraph_101.ipynb`：LangGraph 基础
+- `notebooks/agent.ipynb`：基础智能体实现
+- `notebooks/evaluation.ipynb`：智能体评测方法
+- `notebooks/hitl.ipynb`：人机协同（HITL）
+- `notebooks/memory.ipynb`：加入记忆能力
 
-## Running Tests
+## 运行测试
 
-### Testing Scripts
+### 脚本实现测试
 
-Test to ensure all implementations work:
+用于验证各实现是否可用：
 
 ```bash
-# Test all implementations
+# 运行全部实现的测试
 python tests/run_all_tests.py --all
 ```
 
-(Note: This will leave out the Gmail implementation `email_assistant_hitl_memory_gmail` from testing.)
+（说明：这不会包含 Gmail 实现 `email_assistant_hitl_memory_gmail` 的测试。）
 
-### Testing Notebooks
+### 笔记本测试
 
-Test all notebooks to ensure they run without errors:
+验证所有笔记本可无错误执行：
 
 ```bash
-# Run all notebook tests directly
+# 直接运行全部笔记本测试
 python tests/test_notebooks.py
 ```
 
+—— 完 ——

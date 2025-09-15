@@ -1,4 +1,4 @@
-"""Define the configurable parameters for the agent."""
+"""定义智能体可配置参数的模块。"""
 
 import os
 from dataclasses import dataclass, fields
@@ -8,13 +8,13 @@ from langchain_core.runnables import RunnableConfig
 
 @dataclass(kw_only=True)
 class Configuration:
-    """Placeholder for configuration."""
+    """配置占位类（可按需扩展具体字段）。"""
 
     @classmethod
     def from_runnable_config(
         cls, config: Optional[RunnableConfig] = None
     ) -> "Configuration":
-        """Create a Configuration instance from a RunnableConfig."""
+        """基于 RunnableConfig 创建 Configuration 实例。"""
         configurable = (
             config["configurable"] if config and "configurable" in config else {}
         )

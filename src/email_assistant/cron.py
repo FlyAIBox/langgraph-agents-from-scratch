@@ -8,7 +8,7 @@ from email_assistant.tools.gmail.run_ingest import fetch_and_process_emails
 
 @dataclass(kw_only=True)
 class JobKickoff:
-    """State for the email ingestion cron job"""
+    """邮件拉取（Gmail Ingestion）定时任务的状态。"""
     email: str
     minutes_since: int = 60
     graph_name: str = "email_assistant_hitl_memory_gmail"
@@ -19,14 +19,14 @@ class JobKickoff:
     skip_filters: bool = False
 
 async def main(state: JobKickoff):
-    """Run the email ingestion process"""
+    """运行邮件拉取与处理流程。"""
     print(f"Kicking off job to fetch emails from the past {state.minutes_since} minutes")
     print(f"Email: {state.email}")
     print(f"URL: {state.url}")
     print(f"Graph name: {state.graph_name}")
     
     try:
-        # Convert state to args object for fetch_and_process_emails
+        # 将状态对象转换为 run_ingest 所需的 Args
         class Args:
             def __init__(self, **kwargs):
                 for key, value in kwargs.items():
@@ -44,16 +44,16 @@ async def main(state: JobKickoff):
             skip_filters=state.skip_filters
         )
         
-        # Print email and URL to verify they're being passed correctly
+        # 打印关键参数，便于检查传参是否正确
         print(f"Args email: {args.email}")
         print(f"Args url: {args.url}")
         
-        # Run the ingestion process
+        # 执行拉取流程
         print("Starting fetch_and_process_emails...")
         result = await fetch_and_process_emails(args)
         print(f"fetch_and_process_emails returned: {result}")
         
-        # Return the result status
+        # 返回结果状态
         return {"status": "success" if result == 0 else "error", "exit_code": result}
     except Exception as e:
         import traceback
@@ -61,7 +61,7 @@ async def main(state: JobKickoff):
         print(traceback.format_exc())
         return {"status": "error", "error": str(e)}
 
-# Build the graph
+# 构建图
 graph = StateGraph(JobKickoff)
 graph.add_node("ingest_emails", main)
 graph.set_entry_point("ingest_emails")
