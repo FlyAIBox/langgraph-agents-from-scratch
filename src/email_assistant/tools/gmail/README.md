@@ -1,81 +1,81 @@
-# Gmail Integration Tools
+# Gmail 集成工具（Gmail Integration Tools）
 
-Connect your email assistant to Gmail and Google Calendar APIs.
+将你的邮件助理连接到 Gmail 与 Google Calendar API。
 
-## Graph
+## 图（Graph）
 
-The `src/email_assistant/email_assistant_hitl_memory_gmail.py` graph is configured to use Gmail tools.
+`src/email_assistant/email_assistant_hitl_memory_gmail.py` 已配置为使用 Gmail 工具。
   
-You simply need to run the setup below to obtain the credentials needed to run the graph with your own email.
+按下述步骤完成凭据配置后，即可用你的邮箱运行此图。
 
-## Setup Credentials
+## 凭据配置（Setup Credentials）
 
-### 1. Set up Google Cloud Project and Enable Required APIs
+### 1. 创建 Google Cloud 项目并启用所需 API
 
-#### Enable Gmail and Calendar APIs
+#### 启用 Gmail 与 Calendar API
 
-1. Go to the [Google APIs Library and enable the Gmail API](https://developers.google.com/workspace/gmail/api/quickstart/python#enable_the_api)
-2. Go to the [Google APIs Library and enable the Google Calendar API](https://developers.google.com/workspace/calendar/api/quickstart/python#enable_the_api)
+1. 前往 [Google APIs Library 启用 Gmail API](https://developers.google.com/workspace/gmail/api/quickstart/python#enable_the_api)
+2. 前往 [Google APIs Library 启用 Google Calendar API](https://developers.google.com/workspace/calendar/api/quickstart/python#enable_the_api)
 
-#### Create OAuth Credentials
+#### 创建 OAuth 凭据
 
-1. Authorize credentials for a desktop application [here](https://developers.google.com/workspace/gmail/api/quickstart/python#authorize_credentials_for_a_desktop_application)
-2. Go to Credentials → Create Credentials → OAuth Client ID
-3. Set Application Type to "Desktop app"
-4. Click "Create"
+1. 在此为桌面应用授权凭据：[链接](https://developers.google.com/workspace/gmail/api/quickstart/python#authorize_credentials_for_a_desktop_application)
+2. 前往 Credentials → Create Credentials → OAuth Client ID
+3. Application Type 选择 "Desktop app"
+4. 点击 "Create"
 
-> Note: If using a personal email (non-Google Workspace) select "External" under "Audience"
+> 注意：若使用个人 Gmail（非 Workspace），在 "Audience" 下选择 "External"
 
 <img width="1496" alt="Screenshot 2025-04-26 at 7 43 57 AM" src="https://github.com/user-attachments/assets/718da39e-9b10-4a2a-905c-eda87c1c1126" />
 
-> Then, add yourself as a test user
+> 然后将你自己添加为 Test User
  
-5. Save the downloaded JSON file (you'll need this in the next step)
+5. 保存下载的 JSON 文件（下一步需要）
 
-### 2. Set Up Authentication Files
+### 2. 设置认证文件
 
-1. Move your downloaded client secret JSON file to the `.secrets` directory
+1. 将下载的 client secret JSON 放置到 `.secrets` 目录
 
 ```bash
-# Create a secrets directory
+# 创建 secrets 目录
 mkdir -p src/email_assistant/tools/gmail/.secrets
 
-# Move your downloaded client secret to the secrets directory
+# 将下载的 client secret 移动到 secrets 目录
 mv /path/to/downloaded/client_secret.json src/email_assistant/tools/gmail/.secrets/secrets.json
 ```
 
-2. Run the Gmail setup script
+2. 运行 Gmail 初始化脚本
 
 ```bash
-# Run the Gmail setup script
+# 运行初始化脚本
 python src/email_assistant/tools/gmail/setup_gmail.py
 ```
 
--  This will open a browser window for you to authenticate with your Google account
--  This will create a `token.json` file in the `.secrets` directory
--  This token will be used for Gmail API access
+- 将打开浏览器完成 Google 账户授权
+- 将在 `.secrets` 目录生成 `token.json`
+- 后续 Gmail API 访问将使用该 token
 
-## Use With A Local Deployment
+## 本地部署中使用（Use With A Local Deployment）
 
-### 1. Run the Gmail Ingestion Script with Locally Running LangGraph Server
+### 1. 启动 LangGraph 本地服务并运行 Gmail 摄取脚本
 
-1. Once you have authentication set up, run LangGraph server locally:
+1. 完成认证后，本地启动 LangGraph 服务：
 
 ```
 langgraph dev
 ```
 
-2. Run the ingestion script in another terminal with desired parameters:
+2. 在另一个终端中运行摄取脚本：
 
 ```bash
 python src/email_assistant/tools/gmail/run_ingest.py --email lance@langgraph.dev --minutes-since 1000
 ```
 
-- By default, this will use the local deployment URL (http://127.0.0.1:2024) and fetch emails from the past 1000 minutes.
-- It will use the LangGraph SDK to pass each email to the locally running email assistant.
-- It will use the `email_assistant_hitl_memory_gmail` graph, which is configured to use Gmail tools.
+- 默认使用本地部署 URL（http://127.0.0.1:2024）并拉取过去 1000 分钟的邮件
+- 使用 LangGraph SDK 将每封邮件发送给本地运行的邮件助理
+- 使用 `email_assistant_hitl_memory_gmail` 图（已配置 Gmail 工具）
 
-#### Parameters:
+#### 参数（Parameters）:
 
 - `--graph-name`: Name of the LangGraph to use (default: "email_assistant_hitl_memory_gmail")
 - `--email`: The email address to fetch messages from (alternative to setting EMAIL_ADDRESS)
@@ -86,56 +86,56 @@ python src/email_assistant/tools/gmail/run_ingest.py --email lance@langgraph.dev
 - `--include-read`: Include emails that have already been read (by default only unread emails are processed)
 - `--skip-filters`: Process all emails without filtering (by default only latest messages in threads where you're not the sender are processed)
 
-#### Troubleshooting:
+#### 故障排查（Troubleshooting）
 
-- **Missing emails?** The Gmail API applies filters to show only important/primary emails by default. You can:
-  - Increase the `--minutes-since` parameter to a larger value (e.g., 1000) to fetch emails from a longer time period
-  - Use the `--include-read` flag to process emails marked as "read" (by default only unread emails are processed)
-  - Use the `--skip-filters` flag to include all messages (not just the latest in a thread, and including ones you sent)
-  - Try running with all options to process everything: `--include-read --skip-filters --minutes-since 1000`
-  - Use the `--mock` flag to test the system with simulated emails
+- **找不到邮件？** Gmail API 默认会应用一些过滤（如仅重要/主收件箱）。可尝试：
+  - 增大 `--minutes-since`（如 1000）扩大时间窗口
+  - 使用 `--include-read` 处理已读邮件（默认仅未读）
+  - 使用 `--skip-filters` 包含所有消息（不仅是线程最新，且包含你发送的）
+  - 组合使用：`--include-read --skip-filters --minutes-since 1000`
+  - 使用 `--mock` 以模拟邮件进行测试
 
-### 2. Connect to Agent Inbox
+### 2. 连接 Agent Inbox
 
-After ingestion, you can access your all interrupted threads in Agent Inbox (https://dev.agentinbox.ai/):
+摄取完成后，可在 Agent Inbox（https://dev.agentinbox.ai/）查看所有被中断（需人工审阅）的线程：
 * Deployment URL: http://127.0.0.1:2024
 * Assistant/Graph ID: `email_assistant_hitl_memory_gmail`
 * Name: `Graph Name`
 
-## Run A Hosted Deployment
+## 运行托管部署（Run A Hosted Deployment）
 
-### 1. Deploy to LangGraph Platform
+### 1. 部署到 LangGraph Platform
 
-1. Navigate to the deployments page in LangSmith
-2. Click New Deployment
-3. Connect it to your fork of the [this repo](https://github.com/langchain-ai/agents-from-scratch) and desired branch
-4. Give it a name like `Yourname-Email-Assistant`
-5. Add the following environment variables:
+1. 在 LangSmith 的 deployments 页面创建部署
+2. 点击 New Deployment
+3. 连接到你 fork 的 [本仓库](https://github.com/langchain-ai/agents-from-scratch) 与目标分支
+4. 命名如 `Yourname-Email-Assistant`
+5. 添加以下环境变量：
    * `OPENAI_API_KEY`
    * `GMAIL_SECRET` - This is the full dictionary in `.secrets/secrets.json`
    * `GMAIL_TOKEN` - This is the full dictionary in `.secrets/token.json`
-6. Click Submit 
-7. Get the `API URL` (https://your-email-assistant-xxx.us.langgraph.app) from the deployment page 
+6. 点击 Submit 
+7. 在部署页面获取 `API URL`（如 https://your-email-assistant-xxx.us.langgraph.app） 
 
-### 2. Run Ingestion with Hosted Deployment
+### 2. 在托管部署上运行摄取
 
-Once your LangGraph deployment is up and running, you can test the email ingestion with:
+部署就绪后，可以通过下述命令测试邮件摄取：
 
 ```bash
 python src/email_assistant/tools/gmail/run_ingest.py --email lance@langchain.dev --minutes-since 2440 --include-read --url https://your-email-assistant-xxx.us.langgraph.app
 ```
 
-### 3. Connect to Agent Inbox
+### 3. 连接 Agent Inbox
 
-After ingestion, you can access your all interrupted threads in Agent Inbox (https://dev.agentinbox.ai/):
+摄取完成后，可在 Agent Inbox（https://dev.agentinbox.ai/）查看需人工审阅的线程：
 * Deployment URL: https://your-email-assistant-xxx.us.langgraph.app
 * Assistant/Graph ID: `email_assistant_hitl_memory_gmail`
 * Name: `Graph Name`
 * LangSmith API Key: `LANGSMITH_API_KEY`
 
-### 4. Set up Cron Job
+### 4. 设置 Cron 任务
 
-With a hosted deployment, you can set up a cron job to run the ingestion script at a specified interval.
+在托管部署上，可以设置定时任务按固定频率执行摄取脚本。
 
 To automate email ingestion, set up a scheduled cron job using the included setup script:
 
@@ -143,7 +143,7 @@ To automate email ingestion, set up a scheduled cron job using the included setu
 python src/email_assistant/tools/gmail/setup_cron.py --email lance@langchain.dev --url https://lance-email-assistant-4681ae9646335abe9f39acebbde8680b.us.langgraph.app 
 ```
 
-#### Parameters:
+#### 参数（Parameters）：
 
 - `--email`: Email address to fetch messages for (required)
 - `--url`: LangGraph deployment URL (required)
@@ -152,9 +152,9 @@ python src/email_assistant/tools/gmail/setup_cron.py --email lance@langchain.dev
 - `--graph-name`: Name of the graph to use (default: "email_assistant_hitl_memory_gmail")
 - `--include-read`: Include emails marked as read (by default only unread emails are processed) (default: false)
 
-#### How the Cron Works
+#### Cron 工作方式（How the Cron Works）
 
-The cron consists of two main components:
+该 cron 包含两个核心组件：
 
 1. **`src/email_assistant/cron.py`**: Defines a simple LangGraph graph that:
    - Calls the same `fetch_and_process_emails` function used by `run_ingest.py`
@@ -163,7 +163,7 @@ The cron consists of two main components:
 2. **`src/email_assistant/tools/gmail/setup_cron.py`**: Creates the scheduled cron job:
    - Uses LangGraph SDK `client.crons.create` to create a cron job for the hosted `cron.py` graph
 
-#### Managing Cron Jobs
+#### 管理 Cron 任务（Managing Cron Jobs）
 
 To view, update, or delete existing cron jobs, you can use the LangGraph SDK:
 
@@ -181,11 +181,11 @@ print(cron_jobs)
 await client.crons.delete(cron_job_id)
 ```
 
-## How Gmail Ingestion Works
+## Gmail 摄取流程（How Gmail Ingestion Works）
 
-The Gmail ingestion process works in three main stages:
+整体分为三个阶段：
 
-### 1. CLI Parameters → Gmail Search Query
+### 1. CLI 参数 → Gmail 查询语句
 
 CLI parameters are translated into a Gmail search query:
 
@@ -193,17 +193,17 @@ CLI parameters are translated into a Gmail search query:
 - `--email you@example.com` → `to:you@example.com OR from:you@example.com` (emails where you're sender or recipient)
 - `--include-read` → removes `is:unread` filter (includes read messages)
 
-For example, running:
+例如：
 ```
 python run_ingest.py --email you@example.com --minutes-since 1440 --include-read
 ```
 
-Creates a Gmail API search query like:
+将构造类似如下的查询：
 ```
 (to:you@example.com OR from:you@example.com) after:1745432245
 ```
 
-### 2. Search Results → Thread Processing
+### 2. 搜索结果 → 线程处理
 
 For each message returned by the search:
 
@@ -214,9 +214,9 @@ For each message returned by the search:
    - The specific message found in the search (default behavior)
    - The latest message in the thread (when using `--skip-filters`)
 
-### 3. Default Filters and `--skip-filters` Behavior
+### 3. 默认过滤与 `--skip-filters` 的影响
 
-#### Default Filters Applied
+#### 默认过滤策略
 
 Without `--skip-filters`, the system applies these three filters in sequence:
 
@@ -240,7 +240,7 @@ Without `--skip-filters`, the system applies these three filters in sequence:
    
 The combination of these filters means only the latest message in each thread that was not sent by you and is unread (unless `--include-read` is specified) will be processed.
 
-#### Effect of `--skip-filters` Flag
+#### `--skip-filters` 的作用
 
 When `--skip-filters` is enabled:
 
@@ -259,15 +259,15 @@ When `--skip-filters` is enabled:
    - To process read messages, you must still use `--include-read`
    - This is because the unread filter happens at the search level
 
-In summary:
+小结：
 - Default: Process only unread messages where you're not the sender and that are the latest in their thread
 - `--skip-filters`: Process all messages found by search, using the latest message in each thread
 - `--include-read`: Include read messages in the search
 - `--include-read --skip-filters`: Most comprehensive, processes the latest message in all threads found by search
 
-## Important Gmail API Limitations
+## Gmail API 的一些限制
 
-The Gmail API has several limitations that affect email ingestion:
+这些限制会影响摄取体验：
 
 1. **Search-Based API**: Gmail doesn't provide a direct "get all emails from timeframe" endpoint
    - All email retrieval relies on Gmail's search functionality

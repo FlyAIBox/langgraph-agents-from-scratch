@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 """
-Setup cron job for email ingestion in LangGraph.
+在 LangGraph 中为邮件摄取创建定时任务（cron）。
 
-This script creates a scheduled cron job in LangGraph that periodically
-runs the email ingestion graph to process new emails.
+本脚本会在 LangGraph 上创建一个按计划运行的 cron 任务，周期性触发邮件摄取图以处理新邮件。
 """
 
 import argparse
@@ -23,14 +22,14 @@ async def main(
     graph_name: str = "email_assistant_hitl_memory_gmail",
     include_read: bool = False,
 ):
-    """Set up a cron job for email ingestion"""
-    # Connect to LangGraph server
+    """创建用于邮件摄取的 cron 任务。"""
+    # 连接 LangGraph 服务
     if url is None:
         client = get_client(url="http://127.0.0.1:2024")
     else:
         client = get_client(url=url)
     
-    # Create cron job configuration
+    # 构造 cron 任务输入参数
     cron_input = {
         "email": email,
         "minutes_since": minutes_since,
@@ -42,57 +41,57 @@ async def main(
         "skip_filters": False
     }
     
-    # Register the cron job
+    # 注册 cron 任务
     cron = await client.crons.create(
         "cron",              # The graph name for the cron
         schedule=schedule,   # Cron schedule expression
         input=cron_input     # Input parameters for the cron graph
     )
     
-    print(f"Cron job created successfully with schedule: {schedule}")
-    print(f"Email ingestion will run for: {email}")
-    print(f"Processing emails from the past {minutes_since} minutes")
-    print(f"Using graph: {graph_name}")
+    print(f"Cron 创建成功，调度表达式: {schedule}")
+    print(f"将为邮箱执行摄取: {email}")
+    print(f"处理过去 {minutes_since} 分钟内的邮件")
+    print(f"使用图: {graph_name}")
     
     return cron
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Set up a cron job for email ingestion in LangGraph")
+    parser = argparse.ArgumentParser(description="为 LangGraph 邮件摄取创建 cron 任务")
     
     parser.add_argument(
         "--email",
         type=str,
         required=True,
-        help="Email address to fetch messages for",
+        help="要拉取往来邮件的邮箱地址",
     )
     parser.add_argument(
         "--url",
         type=str,
         required=True,
-        help="URL to the LangGraph server",
+        help="LangGraph 服务 URL",
     )
     parser.add_argument(
         "--minutes-since",
         type=int,
         default=60,
-        help="Only process emails that are less than this many minutes old",
+        help="仅处理距今 N 分钟内的邮件",
     )
     parser.add_argument(
         "--schedule",
         type=str,
         default="*/10 * * * *",
-        help="Cron schedule expression (default: every 10 minutes)",
+        help="Cron 调度表达式（默认每 10 分钟）",
     )
     parser.add_argument(
         "--graph-name",
         type=str,
         default="email_assistant_hitl_memory_gmail",
-        help="Name of the graph to use for processing emails",
+        help="用于处理邮件的图名称",
     )
     parser.add_argument(
         "--include-read",
         action="store_true",
-        help="Include emails that have already been read",
+        help="包含已读邮件",
     )
     
     args = parser.parse_args()
